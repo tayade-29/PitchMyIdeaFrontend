@@ -134,16 +134,22 @@ export const authSlice = createSlice({
         state.message = action.payload
         state.user = null
       })
-      .addCase(getProfile.fulfilled, (state, action) => {
-        state.user = { ...state.user, ...action.payload }
-      })
-      .addCase(updateProfile.fulfilled, (state, action) => {
-        state.user = { ...state.user, ...action.payload }
-      })
+     // Inside extraReducers
+.addCase(getProfile.fulfilled, (state, action) => {
+  const updatedUser = { ...state.user, ...action.payload };
+  state.user = updatedUser;
+  localStorage.setItem('user', JSON.stringify(updatedUser));
+})
+.addCase(updateProfile.fulfilled, (state, action) => {
+  const updatedUser = { ...state.user, ...action.payload };
+  state.user = updatedUser;
+  localStorage.setItem('user', JSON.stringify(updatedUser));
+})
       .addCase(logout.fulfilled, (state) => {
         state.user = null
       })
   }
+  
 })
 
 export const { reset } = authSlice.actions

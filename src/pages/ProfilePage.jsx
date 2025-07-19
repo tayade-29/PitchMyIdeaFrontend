@@ -1,23 +1,30 @@
-import { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { getProfile, updateProfile, logout } from '../store/slices/authSlice'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { getProfile, updateProfile, logout } from '../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 const ProfilePage = () => {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
-  const { user, isLoading } = useSelector((state) => state.auth)
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { user, isLoading, isError, message } = useSelector((state) => state.auth);
 
-  const [isEditing, setIsEditing] = useState(false)
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     surname: '',
     email: '',
     phone: '',
     address: '',
-    pinCode: ''
-  })
+    pinCode: '',
+    profilePhoto: ''
+  });
 
+  // Load profile on component mount
+  useEffect(() => {
+    dispatch(getProfile());
+  }, [dispatch]);
+
+  // Update form data when user data is available
   useEffect(() => {
     if (user) {
       setFormData({
@@ -26,30 +33,37 @@ const ProfilePage = () => {
         email: user.email || '',
         phone: user.phone || '',
         address: user.address || '',
-        pinCode: user.pinCode || ''
-      })
+        pinCode: user.pinCode || '',
+        profilePhoto: user.profilePhoto || ''
+      });
     }
-  }, [user])
+  }, [user]);
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
-    })
-  }
+    });
+  };
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    e.preventDefault();
     dispatch(updateProfile(formData))
-    setIsEditing(false)
-  }
+      .unwrap()
+      .then(() => {
+        setIsEditing(false);
+      })
+      .catch((error) => {
+        console.error('Update failed:', error);
+      });
+  };
 
   const handleLogout = () => {
-    dispatch(logout())
-    navigate('/login')
-  }
+    dispatch(logout());
+    navigate('/login');
+  };
 
-  if (isLoading) {
+  if (isLoading && !user) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
@@ -57,7 +71,7 @@ const ProfilePage = () => {
           <p className="text-gray-400">Loading profile...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -66,10 +80,20 @@ const ProfilePage = () => {
         <div className="bg-gray-900 border border-gray-800 rounded-lg p-8">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 bg-gray-700 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-700">
+                {formData.profilePhoto ? (
+                  <img 
+                    src={formData.profilePhoto} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                )}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">
@@ -94,6 +118,12 @@ const ProfilePage = () => {
             </div>
           </div>
 
+          {isError && (
+            <div className="bg-red-500/20 border border-red-500/30 text-red-400 px-4 py-3 rounded-md mb-6">
+              {message}
+            </div>
+          )}
+
           {isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -108,6 +138,7 @@ const ProfilePage = () => {
                     value={formData.name}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
+                    required
                   />
                 </div>
                 <div>
@@ -121,6 +152,7 @@ const ProfilePage = () => {
                     value={formData.surname}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
+                    required
                   />
                 </div>
               </div>
@@ -136,6 +168,7 @@ const ProfilePage = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
+                  required
                   disabled
                 />
               </div>
@@ -182,11 +215,27 @@ const ProfilePage = () => {
                 />
               </div>
 
+              <div>
+                <label htmlFor="profilePhoto" className="block text-sm font-medium text-gray-300 mb-2">
+                  Profile Photo URL
+                </label>
+                <input
+                  type="text"
+                  id="profilePhoto"
+                  name="profilePhoto"
+                  value={formData.profilePhoto}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-500 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
+                  placeholder="Enter image URL"
+                />
+              </div>
+
               <button
                 type="submit"
-                className="px-6 py-3 bg-white text-black rounded-md hover:bg-gray-100 transition-colors duration-200 font-medium"
+                disabled={isLoading}
+                className="w-full py-3 bg-white text-black font-medium rounded-md hover:bg-gray-100 transition-colors duration-200 disabled:opacity-50"
               >
-                Save Changes
+                {isLoading ? 'Saving Changes...' : 'Save Changes'}
               </button>
             </form>
           ) : (
@@ -226,7 +275,7 @@ const ProfilePage = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProfilePage
+export default ProfilePage;

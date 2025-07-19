@@ -83,7 +83,7 @@ const Navbar = () => {
           {/* Center Logo/Heading */}
           <div className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none md:translate-x-0">
             <Link to="/" className="text-xl font-display font-semibold text-white tracking-tight">
-              IdeaHub
+              IdeaBridge
             </Link>
           </div>
 
